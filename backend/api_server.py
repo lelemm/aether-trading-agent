@@ -5,10 +5,13 @@ FastAPI server to expose trading data to the frontend.
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import logging
+import os
 from datetime import datetime
+from pathlib import Path
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -39,11 +42,6 @@ loop_controller_instance: Optional[Any] = None
 # Pydantic models
 class ChatRequest(BaseModel):
     message: str
-
-
-@app.get("/")
-async def root():
-    return {"message": "Trading Agent API", "status": "running"}
 
 
 @app.get("/api/balance")
@@ -596,6 +594,37 @@ Answer using ONLY the data from the context above. Quote the exact numbers provi
     except Exception as e:
         logger.error(f"Error in agent chat: {e}", exc_info=True)
         return {"status": "error", "detail": str(e)}
+
+
+def configure_frontend(app: FastAPI) -> None:
+    """Configure static frontend assets so the SPA is served from the API root."""
+    frontend_root = Path(
+        os.getenv(
+            "FRONTEND_DIST_PATH",
+            Path(__file__).resolve().parent / "frontend_dist",
+        )
+    ).resolve()
+
+    if frontend_root.is_dir():
+        logger.info("Serving frontend assets from %s", frontend_root)
+        app.mount("/", StaticFiles(directory=frontend_root, html=True), name="frontend")
+    else:
+        logger.warning(
+            "Frontend build directory not found at %s. Root path will respond with JSON status.",
+            frontend_root,
+        )
+
+        @app.get("/", include_in_schema=False)
+        async def root():
+            return {
+                "message": "Trading Agent API",
+                "status": "running",
+                "frontend_available": False,
+                "expected_frontend_path": str(frontend_root),
+            }
+
+
+configure_frontend(app)
 
 
 if __name__ == "__main__":
