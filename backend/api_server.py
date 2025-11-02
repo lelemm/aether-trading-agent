@@ -5,11 +5,15 @@ FastAPI server to expose trading data to the frontend.
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import logging
 from datetime import datetime
 from dotenv import load_dotenv
+from pathlib import Path
+import os
 
 # Load environment variables
 load_dotenv()
@@ -24,6 +28,50 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Get the path to the frontend build directory
+# When running from Docker, frontend build will be in ./frontend/dist relative to backend
+# When running locally, it might be in ../frontend/dist
+BACKEND_DIR = Path(__file__).parent
+# Try Docker path first (same directory), then local path (parent directory)
+FRONTEND_BUILD_DIR = (
+    BACKEND_DIR / "frontend" / "dist"
+    if (BACKEND_DIR / "frontend" / "dist").exists()
+    else BACKEND_DIR.parent / "frontend" / "dist"
+)
+
+# Serve static files from frontend build directory if it exists
+if FRONTEND_BUILD_DIR.exists():
+    # Mount static assets (JS, CSS, images, etc.)
+    assets_dir = FRONTEND_BUILD_DIR / "assets"
+    if assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
+    
+    # Serve other static files (favicon, manifest, etc.)
+    static_files_dir = FRONTEND_BUILD_DIR
+    
+    # Create individual route handlers for static files
+    for static_file in ["favicon.ico", "favicon.svg", "apple-touch-icon.png", 
+                        "favicon-96x96.png", "site.webmanifest",
+                        "web-app-manifest-192x192.png", "web-app-manifest-512x512.png"]:
+        static_path = static_files_dir / static_file
+        if static_path.exists():
+            # Capture filename in closure using default argument
+            def make_handler(fname=static_file):
+                async def handler():
+                    return FileResponse(str(static_files_dir / fname))
+                return handler
+            app.get(f"/{static_file}")(make_handler())
+    
+    # Serve images from public/image directory
+    image_dir = static_files_dir / "image"
+    if image_dir.exists():
+        app.mount("/image", StaticFiles(directory=str(image_dir)), name="image")
+    
+    # Serve favicon directory
+    favicon_dir = static_files_dir / "favicon"
+    if favicon_dir.exists():
+        app.mount("/favicon", StaticFiles(directory=str(favicon_dir)), name="favicon")
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +91,13 @@ class ChatRequest(BaseModel):
 
 @app.get("/")
 async def root():
-    return {"message": "Trading Agent API", "status": "running"}
+    """Serve the frontend index.html file, or return API info if frontend not built"""
+    if FRONTEND_BUILD_DIR.exists():
+        index_file = FRONTEND_BUILD_DIR / "index.html"
+        if index_file.exists():
+            return FileResponse(str(index_file))
+    
+    return {"message": "Trading Agent API", "status": "running", "frontend": "not built"}
 
 
 @app.get("/api/balance")
@@ -596,6 +650,24 @@ Answer using ONLY the data from the context above. Quote the exact numbers provi
     except Exception as e:
         logger.error(f"Error in agent chat: {e}", exc_info=True)
         return {"status": "error", "detail": str(e)}
+
+
+# Catch-all route for frontend SPA routing (must be last)
+# This serves index.html for any route that doesn't match API routes
+if FRONTEND_BUILD_DIR.exists():
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        """Serve frontend for any non-API routes"""
+        # Don't serve frontend for API routes
+        if full_path.startswith("api/"):
+            return {"error": "Not found"}
+        
+        # Serve index.html for all other routes (SPA routing)
+        index_file = FRONTEND_BUILD_DIR / "index.html"
+        if index_file.exists():
+            return FileResponse(str(index_file))
+        
+        return {"error": "Frontend not found"}
 
 
 if __name__ == "__main__":

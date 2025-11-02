@@ -12,7 +12,8 @@ function App() {
 
   // Fetch data from backend
   useEffect(() => {
-    const API_BASE = 'http://localhost:8000/api'
+    // Use relative path when served from backend, absolute path for development
+    const API_BASE = import.meta.env.PROD ? '/api' : 'http://localhost:8000/api'
     
     const fetchData = async () => {
       try {

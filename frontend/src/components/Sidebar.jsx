@@ -43,7 +43,8 @@ function Sidebar({ positions, trades, agentMessages }) {
     })
     
     try {
-      const response = await fetch('http://localhost:8000/api/agent-chat', {
+      const API_BASE = import.meta.env.PROD ? '/api' : 'http://localhost:8000/api'
+      const response = await fetch(`${API_BASE}/agent-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: messageText }),
@@ -274,7 +275,7 @@ function Sidebar({ positions, trades, agentMessages }) {
                                   <button className="exit-plan-close" onClick={(e) => {
                                     e.stopPropagation()
                                     closeExitPlan()
-                                  }}>×</button>
+                                  }}>?</button>
                                 </div>
                                 <div className="exit-plan-content">
                                   <div className="exit-plan-item">
@@ -339,7 +340,7 @@ function Sidebar({ positions, trades, agentMessages }) {
                             <span className="metric-value">
                               ${typeof trade.entryPrice === 'number' 
                                 ? trade.entryPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                                : trade.entryPrice} → ${typeof trade.exitPrice === 'number'
+                                : trade.entryPrice} ? ${typeof trade.exitPrice === 'number'
                                 ? trade.exitPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                                 : trade.exitPrice}
                             </span>
@@ -358,7 +359,7 @@ function Sidebar({ positions, trades, agentMessages }) {
                           <div className="metric-item">
                             <span className="metric-label">Notional:</span>
                             <span className="metric-value">
-                              ${trade.entryNotional.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} → ${trade.exitNotional.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              ${trade.entryNotional.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ? ${trade.exitNotional.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           </div>
                           <div className="metric-item">

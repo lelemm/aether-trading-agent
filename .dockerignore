@@ -1,0 +1,42 @@
+# Git
+.git
+.gitignore
+
+# Frontend
+frontend/node_modules
+frontend/dist
+frontend/.vite
+
+# Backend
+backend/__pycache__
+backend/*.pyc
+backend/*.pyo
+backend/*.pyd
+backend/.env
+backend/logs
+backend/*.log
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+!backend/README.md
+
+# Test files
+**/__tests__
+**/*.test.*
+**/*.spec.*
+
+# Build artifacts
+*.egg-info
+dist
+build

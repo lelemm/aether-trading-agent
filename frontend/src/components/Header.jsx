@@ -10,7 +10,8 @@ function Header({ balance }) {
 
   useEffect(() => {
     // Check agent status on mount
-    fetch('http://localhost:8000/api/agent/status')
+    const API_BASE = import.meta.env.PROD ? '/api' : 'http://localhost:8000/api'
+    fetch(`${API_BASE}/agent/status`)
       .then(res => res.json())
       .then(data => setAgentPaused(data.paused))
       .catch(err => console.error('Failed to get agent status:', err))
@@ -28,7 +29,8 @@ function Header({ balance }) {
       async () => {
         setLoading(true)
         try {
-          const res = await fetch('http://localhost:8000/api/emergency-close', { method: 'POST' })
+          const API_BASE = import.meta.env.PROD ? '/api' : 'http://localhost:8000/api'
+          const res = await fetch(`${API_BASE}/emergency-close`, { method: 'POST' })
           const data = await res.json()
           console.log(data.message)
         } catch (err) {
@@ -42,8 +44,9 @@ function Header({ balance }) {
   const handleToggleAgent = async () => {
     setLoading(true)
     try {
-      const endpoint = agentPaused ? '/api/agent/resume' : '/api/agent/pause'
-      const res = await fetch(`http://localhost:8000${endpoint}`, { method: 'POST' })
+      const API_BASE = import.meta.env.PROD ? '/api' : 'http://localhost:8000/api'
+      const endpoint = agentPaused ? '/agent/resume' : '/agent/pause'
+      const res = await fetch(`${API_BASE}${endpoint}`, { method: 'POST' })
       const data = await res.json()
       setAgentPaused(!agentPaused)
       console.log(data.message)
