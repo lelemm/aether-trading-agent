@@ -161,6 +161,26 @@ DECISION_PROVIDER=deepseek
 4. Generate a new API key
 5. Copy the key to your `.env` file
 
+## Docker Deployment
+
+The backend can now serve the compiled frontend bundle directly from the root path when run in Docker or locally. The multi-stage build compiles the Vite UI and bundles it into the backend image.
+
+1. **Build the image** (from the repository root):
+   ```bash
+   docker build -f backend/Dockerfile . -t trading-agent-backend
+   ```
+
+2. **Run the container** (mount or provide your `.env` as needed):
+   ```bash
+   docker run --env-file path/to/.env -p 8000:8000 trading-agent-backend
+   ```
+
+   - The SPA is available at `http://localhost:8000`
+   - Backend APIs remain available under `http://localhost:8000/api/...`
+
+3. **Custom frontend location** *(optional)*:
+   - Set the `FRONTEND_DIST_PATH` environment variable if you want to serve a different build directory at runtime.
+
 ## Usage
 
 ### Basic Usage
